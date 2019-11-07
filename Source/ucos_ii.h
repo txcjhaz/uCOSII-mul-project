@@ -534,6 +534,8 @@ typedef struct os_tcb {
 #endif
 
 	INT16			compTime;					// 剩余运行时间
+	INT8U			dataGroup;					// 所在数据组
+	INT8U			dataPrio;						// 数据优先级
 } OS_TCB;
 
 /*$PAGE*/

@@ -331,14 +331,24 @@ void  OSIntExit (void)
                 OS_SchedNew();
 				//printf("%d\n", OSPrioCur);
                 if (OSPrioHighRdy != OSPrioCur) {          /* No Ctx Sw if current task is highest rdy */
-                    OSTCBHighRdy  = OSTCBPrioTbl[OSPrioHighRdy];
+									// 若在同一数据组，则比较数据优先级
+					if (OSPrioCur == 63
+						|| OSTCBPrioTbl[OSPrioHighRdy]->dataGroup != OSTCBPrioTbl[OSPrioCur]->dataGroup
+						|| (OSTCBPrioTbl[OSPrioHighRdy]->dataGroup == OSTCBPrioTbl[OSPrioCur]->dataGroup
+							&& OSTCBPrioTbl[OSPrioHighRdy]->dataPrio <= OSTCBPrioTbl[OSPrioCur]->dataPrio)) {
+						OSTCBHighRdy = OSTCBPrioTbl[OSPrioHighRdy];
 #if OS_TASK_PROFILE_EN > 0
-                    OSTCBHighRdy->OSTCBCtxSwCtr++;         /* Inc. # of context switches to this task  */
+						OSTCBHighRdy->OSTCBCtxSwCtr++;         /* Inc. # of context switches to this task  */
 #endif
-                    OSCtxSwCtr++;                          /* Keep track of the number of ctx switches */
-					printf("%d\tPreempt\t\t%d\t%d\n", OSTimeGet(), OSPrioCur, OSTCBHighRdy->OSTCBPrio);
-                    OSIntCtxSw();                          /* Perform interrupt level ctx switch       */
+						OSCtxSwCtr++;                          /* Keep track of the number of ctx switches */
+						printf("%d\tPreempt\t\t%d\t%d\n", OSTimeGet(), OSPrioCur, OSTCBHighRdy->OSTCBPrio);	// 打印抢占消息
+						OSIntCtxSw();                          /* Perform interrupt level ctx switch       */
+					}
+					else {
+						printf("你怎么能抢占数据优先级高的呢？");
+					}
                 }
+				
             }
         }
         OS_EXIT_CRITICAL();
@@ -523,7 +533,7 @@ void  OSTimeTick (void)
     OS_CPU_SR  cpu_sr = 0;
 #endif
 
-OSTCBCur->compTime--;
+OSTCBCur->compTime--;				// 每次tick，当前OS_TCB的剩余运行时间减1
 
 #if OS_TIME_TICK_HOOK_EN > 0
     OSTimeTickHook();                                      /* Call user definable hook                     */
@@ -1183,13 +1193,13 @@ void  OS_Sched (void)
         if (OSLockNesting == 0) {                      /* ... scheduler is not locked                  */
             OS_SchedNew();
             if (OSPrioHighRdy != OSPrioCur) {          /* No Ctx Sw if current task is highest rdy     */
-				OSTCBHighRdy = OSTCBPrioTbl[OSPrioHighRdy];
+					OSTCBHighRdy = OSTCBPrioTbl[OSPrioHighRdy];
 #if OS_TASK_PROFILE_EN > 0
-                OSTCBHighRdy->OSTCBCtxSwCtr++;         /* Inc. # of context switches to this task      */
+					OSTCBHighRdy->OSTCBCtxSwCtr++;         /* Inc. # of context switches to this task      */
 #endif
-                OSCtxSwCtr++;                          /* Increment context switch counter             */
-				printf("%d\tComplete\t%d\t%d\n", OSTimeGet(), OSPrioCur, OSTCBHighRdy->OSTCBPrio);
-                OS_TASK_SW();                          /* Perform a context switch                     */
+					OSCtxSwCtr++;                          /* Increment context switch counter             */
+					printf("%d\tComplete\t%d\t%d\n", OSTimeGet(), OSPrioCur, OSTCBHighRdy->OSTCBPrio);
+					OS_TASK_SW();                          /* Perform a context switch                     */
             }
         }
     }

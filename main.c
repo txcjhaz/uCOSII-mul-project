@@ -37,6 +37,8 @@ OS_STK        AppStartTaskStk2[TASK_STK_SIZE];
 struct ti{
 	short c;
 	short p;
+	INT8U dataGroup;
+	INT8U dataPrio;
 };
 
 /*
@@ -46,7 +48,6 @@ struct ti{
 */
 
 static  void  AppStartTask(void *p_arg);
-static  void  AppStartTask1(void* p_arg);
 
 #if OS_VIEW_MODULE > 0
 static  void  AppTerminalRx(INT8U rx_data);
@@ -72,9 +73,9 @@ void main(int argc, char *argv[])
 
     OSInit();                              /* Initialize "uC/OS-II, The Real-Time Kernel"                                      */
 
-	struct ti arg0 = { 1, 4 };
-	struct ti arg1 = { 2, 5 };
-	struct ti arg2 = { 2, 10};
+	struct ti arg0 = { 1, 4, 0, 1 };
+	struct ti arg1 = { 2, 5, 1, 1 };
+	struct ti arg2 = { 2, 10, 1, 0};
 
     OSTaskCreateExt(AppStartTask,
                     (void *)&arg0,
@@ -153,22 +154,19 @@ void  AppStartTask (void *p_arg)
 	//	OSTimeDlyHMSM(0, 0, 1, 0);
  //   }
 	OSTCBCur->compTime = arg->c;
+	OSTCBCur->dataGroup = arg->dataGroup;
+	OSTCBCur->dataPrio = arg->dataPrio;
 	while (TRUE)                                 /* Task body, always written as an infinite loop.                             */
 	{
 		int start = OSTimeGet();
 		while (OSTCBCur->compTime > 0) {
-			//printf("你怎么还不出来\n");
-			//printf("%d\n", OSTCBCur->OSTCBCtxSwCtr);
 			// do nothing
-			//OS_Printf(OSTCBCur->OSTCBCtxSwCtr);
 		}
 		int end = OSTimeGet();
 		int to_delay = arg->p - (end - start);
 		OSTCBCur->compTime = arg->c;
 		if (to_delay < 0)
 			continue;
-		//OS_Printf("Delay %d milli and print\n", to_delay);  /* your code here. Create more tasks, etc.                                    */
-		//OS_Printf("%d\n", OSTCBCur->OSTCBCtxSwCtr);
 		OSTimeDly(to_delay);
 	}
 
