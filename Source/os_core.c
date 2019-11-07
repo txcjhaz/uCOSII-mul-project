@@ -329,12 +329,14 @@ void  OSIntExit (void)
         if (OSIntNesting == 0) {                           /* Reschedule only if all ISRs complete ... */
             if (OSLockNesting == 0) {                      /* ... and not locked.                      */
                 OS_SchedNew();
+				//printf("%d\n", OSPrioCur);
                 if (OSPrioHighRdy != OSPrioCur) {          /* No Ctx Sw if current task is highest rdy */
                     OSTCBHighRdy  = OSTCBPrioTbl[OSPrioHighRdy];
 #if OS_TASK_PROFILE_EN > 0
                     OSTCBHighRdy->OSTCBCtxSwCtr++;         /* Inc. # of context switches to this task  */
 #endif
                     OSCtxSwCtr++;                          /* Keep track of the number of ctx switches */
+					printf("%d\tPreempt\t\t%d\t%d\n", OSTimeGet(), OSPrioCur, OSTCBHighRdy->OSTCBPrio);
                     OSIntCtxSw();                          /* Perform interrupt level ctx switch       */
                 }
             }
@@ -521,7 +523,7 @@ void  OSTimeTick (void)
     OS_CPU_SR  cpu_sr = 0;
 #endif
 
-
+OSTCBCur->compTime--;
 
 #if OS_TIME_TICK_HOOK_EN > 0
     OSTimeTickHook();                                      /* Call user definable hook                     */
@@ -1181,11 +1183,12 @@ void  OS_Sched (void)
         if (OSLockNesting == 0) {                      /* ... scheduler is not locked                  */
             OS_SchedNew();
             if (OSPrioHighRdy != OSPrioCur) {          /* No Ctx Sw if current task is highest rdy     */
-                OSTCBHighRdy = OSTCBPrioTbl[OSPrioHighRdy];
+				OSTCBHighRdy = OSTCBPrioTbl[OSPrioHighRdy];
 #if OS_TASK_PROFILE_EN > 0
                 OSTCBHighRdy->OSTCBCtxSwCtr++;         /* Inc. # of context switches to this task      */
 #endif
                 OSCtxSwCtr++;                          /* Increment context switch counter             */
+				printf("%d\tComplete\t%d\t%d\n", OSTimeGet(), OSPrioCur, OSTCBHighRdy->OSTCBPrio);
                 OS_TASK_SW();                          /* Perform a context switch                     */
             }
         }

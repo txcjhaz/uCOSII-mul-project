@@ -532,6 +532,8 @@ typedef struct os_tcb {
 #if OS_TASK_NAME_SIZE > 1
     INT8U            OSTCBTaskName[OS_TASK_NAME_SIZE];
 #endif
+
+	INT16			compTime;					// 剩余运行时间
 } OS_TCB;
 
 /*$PAGE*/

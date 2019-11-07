@@ -32,6 +32,12 @@
 */
 
 OS_STK        AppStartTaskStk[TASK_STK_SIZE];
+OS_STK        AppStartTaskStk1[TASK_STK_SIZE];
+OS_STK        AppStartTaskStk2[TASK_STK_SIZE];
+struct ti{
+	short c;
+	short p;
+};
 
 /*
 *********************************************************************************************************
@@ -40,6 +46,7 @@ OS_STK        AppStartTaskStk[TASK_STK_SIZE];
 */
 
 static  void  AppStartTask(void *p_arg);
+static  void  AppStartTask1(void* p_arg);
 
 #if OS_VIEW_MODULE > 0
 static  void  AppTerminalRx(INT8U rx_data);
@@ -65,15 +72,39 @@ void main(int argc, char *argv[])
 
     OSInit();                              /* Initialize "uC/OS-II, The Real-Time Kernel"                                      */
 
+	struct ti arg0 = { 1, 4 };
+	struct ti arg1 = { 2, 5 };
+	struct ti arg2 = { 2, 10};
+
     OSTaskCreateExt(AppStartTask,
-                    (void *)0,
+                    (void *)&arg0,
                     (OS_STK *)&AppStartTaskStk[TASK_STK_SIZE-1],
-                    TASK_START_PRIO,
-                    TASK_START_PRIO,
+                    0,
+                    0,
                     (OS_STK *)&AppStartTaskStk[0],
                     TASK_STK_SIZE,
                     (void *)0,
                     OS_TASK_OPT_STK_CHK | OS_TASK_OPT_STK_CLR);
+
+	OSTaskCreateExt(AppStartTask,
+					(void*)&arg1,
+					(OS_STK*)&AppStartTaskStk1[TASK_STK_SIZE - 1],
+					1,
+					1,
+					(OS_STK*)&AppStartTaskStk1[0],
+					TASK_STK_SIZE,
+					(void*)0,
+					OS_TASK_OPT_STK_CHK | OS_TASK_OPT_STK_CLR);
+
+	OSTaskCreateExt(AppStartTask,
+					(void*)&arg2,
+					(OS_STK*)&AppStartTaskStk2[TASK_STK_SIZE - 1],
+					2,
+					2,
+					(OS_STK*)&AppStartTaskStk2[0],
+					TASK_STK_SIZE,
+					(void*)0,
+					OS_TASK_OPT_STK_CHK | OS_TASK_OPT_STK_CLR);
 
 #if OS_TASK_NAME_SIZE > 11
     OSTaskNameSet(APP_TASK_START_PRIO, (INT8U *)"Start Task", &err);
@@ -106,7 +137,7 @@ void main(int argc, char *argv[])
 
 void  AppStartTask (void *p_arg)
 {
-    p_arg = p_arg;
+    struct ti *arg = (struct ti*)p_arg;
 
 #if 0
     BSP_Init();                                  /* For embedded targets, initialize BSP functions                             */
@@ -116,10 +147,29 @@ void  AppStartTask (void *p_arg)
 #if OS_TASK_STAT_EN > 0
     OSStatInit();                                /* Determine CPU capacity                                                     */
 #endif
-    
-    while (TRUE)                                 /* Task body, always written as an infinite loop.                             */
-	{       		
-		OS_Printf("Delay 1 second and print\n");  /* your code here. Create more tasks, etc.                                    */
-        OSTimeDlyHMSM(0, 0, 1, 0);       
-    }
+
+ //   while (TRUE)                                 /* Task body, always written as an infinite loop.                             */
+	//{      
+	//	OSTimeDlyHMSM(0, 0, 1, 0);
+ //   }
+	OSTCBCur->compTime = arg->c;
+	while (TRUE)                                 /* Task body, always written as an infinite loop.                             */
+	{
+		int start = OSTimeGet();
+		while (OSTCBCur->compTime > 0) {
+			//printf("你怎么还不出来\n");
+			//printf("%d\n", OSTCBCur->OSTCBCtxSwCtr);
+			// do nothing
+			//OS_Printf(OSTCBCur->OSTCBCtxSwCtr);
+		}
+		int end = OSTimeGet();
+		int to_delay = arg->p - (end - start);
+		OSTCBCur->compTime = arg->c;
+		if (to_delay < 0)
+			continue;
+		//OS_Printf("Delay %d milli and print\n", to_delay);  /* your code here. Create more tasks, etc.                                    */
+		//OS_Printf("%d\n", OSTCBCur->OSTCBCtxSwCtr);
+		OSTimeDly(to_delay);
+	}
+
 }
